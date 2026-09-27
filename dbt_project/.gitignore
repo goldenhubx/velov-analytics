@@ -1,0 +1,9 @@
+
+.venv/
+target/
+dbt_packages/
+logs/
+.env
+dbt_internal_packages/
+*.duckdb
+data/raw/*.parquet
