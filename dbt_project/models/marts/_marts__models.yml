@@ -1,0 +1,44 @@
+version: 2
+
+models:
+  - name: fct_station_availability
+    description: "Disponibilité des stations Vélo'v à chaque snapshot, enrichie du référentiel. Incrémental."
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [station_id, ingested_at]
+    columns:
+      - name: station_name
+        description: "Vide si la station n'a pas de référentiel au moment du snapshot."
+        data_tests:
+          - not_null:
+              config:
+                severity: warn
+      - name: occupancy_rate
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                max_value: 1
+              config:
+                severity: warn
+      - name: is_operational
+        description: "Vrai si la station est installée, ouverte à la location et au retour."
+        data_tests:
+          - not_null
+      - name: capacity_gap
+        description: "capacité - (vélos + vélos HS + bornes libres + bornes HS). Vaut 0 si les compteurs sont cohérents."
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: -1
+              config:
+                severity: warn
+
+  - name: dim_stations
+    description: "Une ligne par station, dernière version connue du référentiel."
+    columns:
+      - name: station_id
+        data_tests:
+          - unique
+          - not_null

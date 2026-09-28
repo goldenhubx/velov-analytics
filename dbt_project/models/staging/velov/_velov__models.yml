@@ -1,0 +1,65 @@
+version: 2
+
+models:
+  - name: stg_velov__station_status
+    description: "Un snapshot de disponibilité par station et par ingestion, typé et renommé."
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [station_id, ingested_at]
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "bikes_available = mechanical_bikes_available + electric_bikes_available"
+    columns:
+      - name: station_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_velov__station_information')
+                field: station_id
+              config:
+                severity: warn
+      - name: bikes_available
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+      - name: docks_available
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+
+  - name: stg_velov__station_information
+    description: "Un snapshot du référentiel des stations par ingestion."
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [station_id, ingested_at]
+    columns:
+      - name: station_id
+        data_tests:
+          - not_null
+      - name: capacity
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+      - name: latitude
+        description: "Doit rester dans la zone de Lyon."
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 45
+                max_value: 46.5
+              config:
+                severity: warn
+      - name: longitude
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 4
+                max_value: 5.5
+              config:
+                severity: warn

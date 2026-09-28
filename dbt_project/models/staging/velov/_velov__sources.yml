@@ -1,0 +1,16 @@
+version: 2
+
+sources:
+  - name: velov
+    database: velov_analytics
+    schema: main
+    config:
+      loaded_at_field: ingested_at
+      freshness:
+        warn_after: {count: 30, period: minute}
+        error_after: {count: 2, period: hour}
+    tables:
+      - name: raw_station_status
+        description: "Snapshots bruts de disponibilité des stations Vélo'v, un lot toutes les ~15 min via GitHub Actions."
+      - name: raw_station_information
+        description: "Snapshots bruts du référentiel des stations (nom, coordonnées, capacité)."
