@@ -1,0 +1,26 @@
+version: 2
+
+models:
+  - name: int_velov__station_availability
+    description: >
+      Jointure entre le statut d'une station et son référentiel au moment du snapshot,
+      enrichie de métriques dérivées : cohérence de capacité (capacity_gap), taux
+      d'occupation (occupancy_rate), drapeau opérationnel (is_operational) et fraîcheur
+      du dernier rapport (minutes_since_last_report).
+    columns:
+      - name: station_id
+        description: "Identifiant de la station, tel que fourni par le flux GBFS."
+      - name: ingested_at
+        description: "Horodatage du snapshot d'ingestion (identique pour statut et référentiel dans un même run)."
+      - name: capacity_gap
+        description: "capacité - (vélos disponibles + vélos HS + bornes libres + bornes HS). Attendu à 0."
+      - name: occupancy_rate
+        description: "Part de la capacité occupée par des vélos disponibles (bikes_available / capacity)."
+      - name: is_operational
+        description: "Vrai si la station est installée, ouverte à la location et au retour."
+      - name: is_empty
+        description: "Vrai si aucun vélo n'est disponible."
+      - name: is_full
+        description: "Vrai si aucune borne n'est disponible."
+      - name: minutes_since_last_report
+        description: "Minutes écoulées entre le dernier rapport GBFS de la station et l'ingestion de ce snapshot."

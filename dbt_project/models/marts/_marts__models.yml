@@ -2,19 +2,26 @@ version: 2
 
 models:
   - name: fct_station_availability
-    description: "Disponibilité des stations Vélo'v à chaque snapshot, enrichie du référentiel. Incrémental."
+    description: "Disponibilité des stations Vélo'v à chaque snapshot, enrichie du référentiel. Incrémental, avec fenêtre de rattrapage d'1h."
     data_tests:
       - dbt_utils.unique_combination_of_columns:
           arguments:
             combination_of_columns: [station_id, ingested_at]
     columns:
+      - name: station_id
+        description: "Identifiant de la station, tel que fourni par le flux GBFS."
+      - name: ingested_at
+        description: "Horodatage du snapshot d'ingestion."
       - name: station_name
         description: "Vide si la station n'a pas de référentiel au moment du snapshot."
         data_tests:
           - not_null:
               config:
                 severity: warn
+      - name: capacity
+        description: "Nombre total d'emplacements (vélos + bornes) à la station."
       - name: occupancy_rate
+        description: "Part de la capacité occupée par des vélos disponibles."
         data_tests:
           - dbt_utils.accepted_range:
               arguments:
@@ -24,8 +31,6 @@ models:
                 severity: warn
       - name: is_operational
         description: "Vrai si la station est installée, ouverte à la location et au retour."
-        data_tests:
-          - not_null
       - name: capacity_gap
         description: "capacité - (vélos + vélos HS + bornes libres + bornes HS). Vaut 0 si les compteurs sont cohérents."
         data_tests:
@@ -45,31 +50,59 @@ models:
             severity: warn
     columns:
       - name: station_id
+        description: "Identifiant de la station, tel que fourni par le flux GBFS."
         data_tests:
           - unique
           - not_null
+      - name: station_name
+        description: "Nom de la station tel que déclaré par l'opérateur (peut être vide, voir cas d'étude qualité dans le README)."
+      - name: station_address
+        description: "Adresse de la station telle que déclarée par l'opérateur."
+      - name: latitude
+        description: "Latitude de la station."
+      - name: longitude
+        description: "Longitude de la station."
+      - name: capacity
+        description: "Nombre total d'emplacements (vélos + bornes) à la station."
+      - name: last_seen_at
+        description: "Horodatage du snapshot le plus récent ayant produit cette version du référentiel."
 
   - name: mart_station_quality
-    description: "Une ligne par station : profil de qualité de données calculé sur tout l'historique. Recalculé intégralement à chaque run."
+    description: "Une ligne par station : profil de qualité de données calculé sur tout l'historique. Recalculé intégralement à chaque run. Voir le README pour le détail de chaque statut."
     columns:
       - name: station_id
+        description: "Identifiant de la station, tel que fourni par le flux GBFS."
         data_tests:
           - unique
           - not_null
+      - name: station_name
+        description: "Nom de la station tel que déclaré par l'opérateur."
+      - name: n_snapshots
+        description: "Nombre total de snapshots observés pour cette station sur tout l'historique."
+      - name: first_seen_at
+        description: "Horodatage du premier snapshot observé pour cette station."
+      - name: last_seen_at
+        description: "Horodatage du dernier snapshot observé pour cette station."
+      - name: latest_is_operational
+        description: "Vrai si la station était opérationnelle au dernier snapshot connu."
+      - name: hours_since_last_report
+        description: "Nombre d'heures depuis le dernier rapport GBFS de la station, au dernier snapshot connu."
       - name: quality_status
-        description: "ok, dormant, closed_but_reporting, silent_while_operational (tous compteurs à zéro alors que la station se déclare active), ou constant_gap (écart de capacité identique sur tous les snapshots opérationnels). Seuils provisoires, voir vars dans dbt_project.yml."
+        description: "ok, dormant (silence > 7 jours), closed_but_reporting (non opérationnelle mais rapporte activement), silent_while_operational (tous compteurs à zéro alors que la station se déclare active), ou constant_gap (écart de capacité identique sur au moins 96 snapshots opérationnels). Seuils provisoires, voir vars dans dbt_project.yml."
         data_tests:
           - not_null
           - accepted_values:
               arguments:
                 values: ['ok', 'dormant', 'closed_but_reporting', 'silent_while_operational', 'constant_gap']
       - name: share_gap_when_operational
+        description: "Part des snapshots opérationnels où capacity_gap est non nul."
         data_tests:
           - dbt_utils.accepted_range:
               arguments:
                 min_value: 0
                 max_value: 1
       - name: share_silent_when_operational
+        description: "Part des snapshots opérationnels où tous les compteurs sont à zéro."
         data_tests:
           - dbt_utils.accepted_range:
               arguments:

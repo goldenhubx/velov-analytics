@@ -2,7 +2,7 @@ version: 2
 
 models:
   - name: stg_velov__station_status
-    description: "Un snapshot de disponibilité par station et par ingestion, typé et renommé."
+    description: "Un snapshot de disponibilité par station et par ingestion, typé et renommé depuis le flux GBFS station_status."
     data_tests:
       - dbt_utils.unique_combination_of_columns:
           arguments:
@@ -12,6 +12,7 @@ models:
             expression: "bikes_available = mechanical_bikes_available + electric_bikes_available"
     columns:
       - name: station_id
+        description: "Identifiant de la station, tel que fourni par le flux GBFS."
         data_tests:
           - not_null
           - relationships:
@@ -20,34 +21,56 @@ models:
                 field: station_id
               config:
                 severity: warn
+      - name: ingested_at
+        description: "Horodatage du snapshot d'ingestion."
+      - name: last_reported_at
+        description: "Horodatage du dernier rapport de la station selon l'API (converti depuis un timestamp Unix)."
       - name: bikes_available
+        description: "Nombre total de vélos disponibles (mécaniques + électriques)."
         data_tests:
           - dbt_utils.accepted_range:
               arguments:
                 min_value: 0
+      - name: mechanical_bikes_available
+        description: "Nombre de vélos mécaniques disponibles."
+      - name: electric_bikes_available
+        description: "Nombre de vélos électriques disponibles."
+      - name: bikes_disabled
+        description: "Nombre de vélos hors service à la station."
       - name: docks_available
+        description: "Nombre de bornes libres."
         data_tests:
           - dbt_utils.accepted_range:
               arguments:
                 min_value: 0
+      - name: docks_disabled
+        description: "Nombre de bornes hors service."
+      - name: is_installed
+        description: "Vrai si la station est physiquement installée."
+      - name: is_renting
+        description: "Vrai si la location de vélos est active à cette station."
+      - name: is_returning
+        description: "Vrai si le retour de vélos est actif à cette station."
 
   - name: stg_velov__station_information
-    description: "Un snapshot du référentiel des stations par ingestion."
+    description: "Un snapshot du référentiel des stations par ingestion, typé et renommé depuis le flux GBFS station_information."
     data_tests:
       - dbt_utils.unique_combination_of_columns:
           arguments:
             combination_of_columns: [station_id, ingested_at]
     columns:
       - name: station_id
+        description: "Identifiant de la station, tel que fourni par le flux GBFS."
         data_tests:
           - not_null
-      - name: capacity
-        data_tests:
-          - dbt_utils.accepted_range:
-              arguments:
-                min_value: 0
+      - name: ingested_at
+        description: "Horodatage du snapshot d'ingestion."
+      - name: station_name
+        description: "Nom de la station tel que déclaré par l'opérateur."
+      - name: station_address
+        description: "Adresse de la station telle que déclarée par l'opérateur."
       - name: latitude
-        description: "Doit rester dans la zone de Lyon."
+        description: "Latitude de la station, doit rester dans la zone de Lyon."
         data_tests:
           - dbt_utils.accepted_range:
               arguments:
@@ -56,6 +79,7 @@ models:
               config:
                 severity: warn
       - name: longitude
+        description: "Longitude de la station, doit rester dans la zone de Lyon."
         data_tests:
           - dbt_utils.accepted_range:
               arguments:
@@ -63,3 +87,9 @@ models:
                 max_value: 5.5
               config:
                 severity: warn
+      - name: capacity
+        description: "Nombre total d'emplacements (vélos + bornes) à la station."
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
