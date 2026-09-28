@@ -1,0 +1,38 @@
+name: dbt build
+
+on:
+  schedule:
+    - cron: "30 4 * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: dbt-build
+  cancel-in-progress: false
+
+jobs:
+  dbt:
+    runs-on: ubuntu-latest
+    env:
+      MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+    defaults:
+      run:
+        working-directory: dbt_project
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Install dbt packages
+        run: uv run dbt deps
+
+      - name: Build models and run tests
+        run: uv run dbt build --target prod
+
+      - name: Check source freshness
+        if: always()
+        run: uv run dbt source freshness --target prod

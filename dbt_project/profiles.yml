@@ -1,0 +1,12 @@
+dbt_project:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "md:velov_analytics?motherduck_token={{ env_var('MOTHERDUCK_TOKEN') }}"
+      threads: 4
+    prod:
+      type: duckdb
+      path: "md:velov_analytics?motherduck_token={{ env_var('MOTHERDUCK_TOKEN') }}"
+      schema: prod
+      threads: 4

@@ -23,7 +23,7 @@ clean-targets:         # directories to be removed by `dbt clean`
   - "dbt_packages"
 
 vars:
-  min_snapshots_for_constant_gap: 20
+  min_snapshots_for_constant_gap: 96
   silent_share_threshold: 0.5
   dormant_after_hours: 168
 
