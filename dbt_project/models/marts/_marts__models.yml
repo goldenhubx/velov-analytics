@@ -37,8 +37,41 @@ models:
 
   - name: dim_stations
     description: "Une ligne par station, dernière version connue du référentiel."
+    data_tests:
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "length(trim(station_name)) > 0"
+          config:
+            severity: warn
     columns:
       - name: station_id
         data_tests:
           - unique
           - not_null
+
+  - name: mart_station_quality
+    description: "Une ligne par station : profil de qualité de données calculé sur tout l'historique. Recalculé intégralement à chaque run."
+    columns:
+      - name: station_id
+        data_tests:
+          - unique
+          - not_null
+      - name: quality_status
+        description: "ok, dormant, closed_but_reporting, silent_while_operational (tous compteurs à zéro alors que la station se déclare active), ou constant_gap (écart de capacité identique sur tous les snapshots opérationnels). Seuils provisoires, voir vars dans dbt_project.yml."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['ok', 'dormant', 'closed_but_reporting', 'silent_while_operational', 'constant_gap']
+      - name: share_gap_when_operational
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                max_value: 1
+      - name: share_silent_when_operational
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                max_value: 1

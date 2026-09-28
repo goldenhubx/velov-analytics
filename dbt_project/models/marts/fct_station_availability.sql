@@ -9,5 +9,5 @@
 select * from {{ ref('int_velov__station_availability') }}
 
 {% if is_incremental() %}
-where ingested_at > (select max(ingested_at) from {{ this }})
+where ingested_at > (select max(ingested_at) from {{ this }}) - interval '1 hour'
 {% endif %}
