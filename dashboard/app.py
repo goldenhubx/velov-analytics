@@ -34,7 +34,18 @@ STATUS_LABELS = {
 @st.cache_resource
 def get_connection() -> duckdb.DuckDBPyConnection:
     token = os.environ["MOTHERDUCK_TOKEN_READONLY"]
-    return duckdb.connect(f"md:velov_analytics?motherduck_token={token}")
+    share_url = os.environ["MOTHERDUCK_SHARE_URL"]
+    con = duckdb.connect(f"md:?motherduck_token={token}")
+    con.sql(f"ATTACH IF NOT EXISTS '{share_url}' AS velov_analytics_shared")
+    con.sql("USE velov_analytics_shared")
+    return con
+
+# @st.cache_resource
+# def get_connection() -> duckdb.DuckDBPyConnection:
+#     token = os.environ["MOTHERDUCK_TOKEN_READONLY"]
+#     return duckdb.connect(
+#         f"md:velov_analytics?motherduck_token={token}", read_only=True
+    # )
 
 
 @st.cache_data(ttl=300)
