@@ -2,6 +2,7 @@
 
 import os
 
+import altair as alt
 import duckdb
 import pandas as pd
 import pydeck as pdk
@@ -15,6 +16,10 @@ STATUS_COLORS = {
     "closed_but_reporting": [245, 158, 11],
     "silent_while_operational": [239, 68, 68],
     "constant_gap": [168, 85, 247],
+}
+
+STATUS_COLORS_HEX = {
+    status: f"#{r:02x}{g:02x}{b:02x}" for status, (r, g, b) in STATUS_COLORS.items()
 }
 
 STATUS_LABELS = {
@@ -109,13 +114,36 @@ with tab_overview:
         "détaillés dans la légende, à partir de son historique complet."
     )
     st.subheader("Répartition par statut qualité")
-    st.dataframe(
+
+    status_counts = (
         filtered_df["quality_status"]
         .value_counts()
         .rename_axis("quality_status")
-        .reset_index(name="n_stations"),
-        width="stretch",
+        .reset_index(name="n_stations")
     )
+
+    chart = (
+        alt.Chart(status_counts)  # ty: ignore[unresolved-attribute]
+        .mark_bar()
+        .encode(
+            x=alt.X("n_stations:Q", title="Nombre de stations"),
+            y=alt.Y("quality_status:N", title=None, sort="-x"),
+            color=alt.Color(
+                "quality_status:N",
+                scale=alt.Scale(
+                    domain=list(STATUS_COLORS_HEX.keys()),
+                    range=list(STATUS_COLORS_HEX.values()),
+                ),
+                legend=None,
+            ),
+            tooltip=["quality_status", "n_stations"],
+        )
+        .properties(height=200)
+    )
+    st.altair_chart(chart, use_container_width=True)
+
+    with st.expander("Voir le détail en tableau"):
+        st.dataframe(status_counts, width="stretch")
 
 with tab_watch:
     watch_df = filtered_df[filtered_df["quality_status"] != "ok"].copy()
@@ -172,7 +200,7 @@ with tab_watch:
             pdk.Deck(
                 layers=[layer],
                 initial_view_state=view_state,
-                tooltip={"text": "{station_name}\n{quality_status}"},
+                tooltip={"text": "{station_name}\n{quality_status}"},  # type: ignore[reportArgumentType]
             )
         )
     else:
