@@ -34,9 +34,7 @@ STATUS_LABELS = {
 @st.cache_resource
 def get_connection() -> duckdb.DuckDBPyConnection:
     token = os.environ["MOTHERDUCK_TOKEN_READONLY"]
-    return duckdb.connect(
-        f"md:velov_analytics?motherduck_token={token}", read_only=True
-    )
+    return duckdb.connect(f"md:velov_analytics?motherduck_token={token}")
 
 
 @st.cache_data(ttl=300)
