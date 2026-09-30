@@ -35,10 +35,18 @@ STATUS_LABELS = {
 def get_connection() -> duckdb.DuckDBPyConnection:
     token = os.environ["MOTHERDUCK_TOKEN_READONLY"]
     share_url = os.environ["MOTHERDUCK_SHARE_URL"]
-    con = duckdb.connect(f"md:?motherduck_token={token}")
-    con.sql(f"ATTACH IF NOT EXISTS '{share_url}' AS velov_analytics_shared")
-    con.sql("USE velov_analytics_shared")
+    con = duckdb.connect(f"{share_url}?motherduck_token={token}")
+    con.sql("USE velov_analytics")
     return con
+
+# @st.cache_resource
+# def get_connection() -> duckdb.DuckDBPyConnection:
+#     token = os.environ["MOTHERDUCK_TOKEN_READONLY"]
+#     share_url = os.environ["MOTHERDUCK_SHARE_URL"]
+#     con = duckdb.connect(f"md:?motherduck_token={token}")
+#     con.sql(f"ATTACH IF NOT EXISTS '{share_url}' AS velov_analytics_shared")
+#     con.sql("USE velov_analytics_shared")
+#     return con
 
 # @st.cache_resource
 # def get_connection() -> duckdb.DuckDBPyConnection:
@@ -149,7 +157,7 @@ with tab_overview:
         )
         .properties(height=200)
     )
-    st.altair_chart(chart, use_container_width=True)
+    st.altair_chart(chart, width="stretch")
 
     with st.expander("Voir le détail en tableau"):
         st.dataframe(status_counts, width="stretch")
